@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Transcription - Continuous Listening</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f0f4f7; }
+        button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; }
+        #output { margin-top: 30px; font-size: 22px; color: #333; border: 1px solid #ccc; padding: 15px; background: #fff; }
+    </style>
+</head>
+<body>
+    <h1>🎤 Live Speech-to-Text Transcription</h1>
+    <button id="start">Start Listening</button>
+    <button id="stop" style="display:none;">Stop Listening</button>
+    <div id="output">Click "Start Listening" and start speaking...</div>
+
+    <script>
+        const startBtn = document.getElementById('start');
+        const stopBtn = document.getElementById('stop');
+        const output = document.getElementById('output');
+
+        // Check if browser supports Speech Recognition
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            output.textContent = "Sorry, your browser doesn't support speech recognition.";
+        } else {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;     // Keep listening even after speech ends
+            recognition.interimResults = true;  // Show partial (interim) results
+            recognition.lang = 'en-US';        // Language setting
+
+            recognition.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+                output.textContent = transcript; // Update live transcription
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+            };
+
+            recognition.onend = () => {
+                // Reset buttons when the recognition stops
+                startBtn.style.display = 'inline';
+                stopBtn.style.display = 'none';
+            };
+
+            startBtn.addEventListener('click', () => {
+                recognition.start();
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'inline';
+                output.textContent = 'Listening...';
+            });
+
+            stopBtn.addEventListener('click', () => {
+                recognition.stop();
+                output.textContent += ' (Stopped)';
+            });
+        }
+    </script>
+</body>
+</html>
