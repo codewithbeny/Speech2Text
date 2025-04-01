@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Continuous Live Transcription</title>
+    <title>Continuous Speech-to-Text</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f0f4f7; }
-        button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; }
-        #output { margin-top: 30px; font-size: 22px; color: #333; border: 1px solid #ccc; padding: 15px; background: #fff; }
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #e8f5e9; }
+        button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; background: #4caf50; color: white; border: none; border-radius: 5px; }
+        button:hover { background: #388e3c; }
+        #output { margin-top: 30px; font-size: 22px; color: #333; border: 1px solid #aaa; padding: 15px; background: #fff; max-width: 80%; margin: auto; }
     </style>
 </head>
 <body>
-    <h1>🎤 AutoRestart Speech-to-Text Transcription</h1>
+    <h1>🎤 Continuous Speech-to-Text</h1>
     <button id="start">Start Listening</button>
     <button id="stop" style="display:none;">Stop Listening</button>
-    <div id="output">Click "Start Listening" and start speaking...</div>
+    <div id="output">Click "Start Listening" and speak...</div>
 
     <script>
         const startBtn = document.getElementById('start');
@@ -22,60 +23,46 @@
         const output = document.getElementById('output');
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
         if (!SpeechRecognition) {
-            output.textContent = "Sorry, your browser doesn't support speech recognition.";
+            output.textContent = "Your browser doesn't support speech recognition.";
         } else {
             const recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = 'en-US';
-            recognition.maxAlternatives = 1;
-
-            let isListening = false;
-
-            function startRecognition() {
-                if (!isListening) {
-                    recognition.start();
-                    isListening = true;
-                    startBtn.style.display = 'none';
-                    stopBtn.style.display = 'inline';
-                    output.textContent = 'Listening...';
-                }
-            }
-
-            function stopRecognition() {
-                if (isListening) {
-                    recognition.stop();
-                    isListening = false;
-                    output.textContent += ' (Stopped)';
-                    startBtn.style.display = 'inline';
-                    stopBtn.style.display = 'none';
-                }
-            }
+            recognition.continuous = true;  // Keep listening
+            recognition.interimResults = true; // Show partial results
+            recognition.lang = 'en-US';  // Language setting
 
             recognition.onresult = (event) => {
                 let transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     transcript += event.results[i][0].transcript;
                 }
-                output.textContent = transcript;
+                output.textContent = transcript;  // Update live transcription
             };
 
             recognition.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
-                // Automatically stop if there's an error
-                stopRecognition();
             };
 
             recognition.onend = () => {
-                if (isListening) {
-                    // Automatically restart recognition if it stops unexpectedly
-                    startRecognition();
+                if (startBtn.style.display === 'none') {
+                    recognition.start();  // Auto-restart if still active
                 }
             };
 
-            startBtn.addEventListener('click', startRecognition);
-            stopBtn.addEventListener('click', stopRecognition);
+            startBtn.addEventListener('click', () => {
+                recognition.start();
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'inline';
+                output.textContent = 'Listening...';
+            });
+
+            stopBtn.addEventListener('click', () => {
+                recognition.stop();
+                output.textContent += ' (Stopped)';
+                startBtn.style.display = 'inline';
+                stopBtn.style.display = 'none';
+            });
         }
     </script>
 </body>
