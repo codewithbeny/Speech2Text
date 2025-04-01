@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Transcription - Continuous Listening</title>
+    <title>Live Transcription (Auto-Restart Fix)</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f0f4f7; }
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #e0f7fa; }
         button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; }
         #output { margin-top: 30px; font-size: 22px; color: #333; border: 1px solid #ccc; padding: 15px; background: #fff; }
     </style>
@@ -21,45 +21,60 @@
         const stopBtn = document.getElementById('stop');
         const output = document.getElementById('output');
 
-        // Check if browser supports Speech Recognition
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             output.textContent = "Sorry, your browser doesn't support speech recognition.";
         } else {
             const recognition = new SpeechRecognition();
-            recognition.continuous = true;     // Keep listening even after speech ends
-            recognition.interimResults = true;  // Show partial (interim) results
-            recognition.lang = 'en-US';        // Language setting
+            recognition.continuous = true;     // Keep listening continuously
+            recognition.interimResults = true;  // Show interim results
+            recognition.lang = 'en-US';        // Language
+            recognition.maxAlternatives = 1;   // Limit to one result per event
+
+            let isListening = false;
+
+            function startRecognition() {
+                if (!isListening) {
+                    recognition.start();
+                    isListening = true;
+                    startBtn.style.display = 'none';
+                    stopBtn.style.display = 'inline';
+                    output.textContent = 'Listening...';
+                }
+            }
+
+            function stopRecognition() {
+                if (isListening) {
+                    recognition.stop();
+                    isListening = false;
+                    output.textContent += ' (Stopped)';
+                    startBtn.style.display = 'inline';
+                    stopBtn.style.display = 'none';
+                }
+            }
 
             recognition.onresult = (event) => {
                 let transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     transcript += event.results[i][0].transcript;
                 }
-                output.textContent = transcript; // Update live transcription
+                output.textContent = transcript;
             };
 
             recognition.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
+                stopRecognition(); // Stop recognition on error
             };
 
             recognition.onend = () => {
-                // Reset buttons when the recognition stops
-                startBtn.style.display = 'inline';
-                stopBtn.style.display = 'none';
+                if (isListening) {
+                    // Automatically restart if still supposed to be listening
+                    startRecognition();
+                }
             };
 
-            startBtn.addEventListener('click', () => {
-                recognition.start();
-                startBtn.style.display = 'none';
-                stopBtn.style.display = 'inline';
-                output.textContent = 'Listening...';
-            });
-
-            stopBtn.addEventListener('click', () => {
-                recognition.stop();
-                output.textContent += ' (Stopped)';
-            });
+            startBtn.addEventListener('click', startRecognition);
+            stopBtn.addEventListener('click', stopRecognition);
         }
     </script>
 </body>
